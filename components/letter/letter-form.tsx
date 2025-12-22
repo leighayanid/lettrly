@@ -14,9 +14,10 @@ import { toast } from 'sonner'
 
 interface LetterFormProps {
   recipientName: string
+  recipientUsername: string
 }
 
-export function LetterForm({ recipientName }: LetterFormProps) {
+export function LetterForm({ recipientName, recipientUsername }: LetterFormProps) {
   const [content, setContent] = useState('')
   const [senderName, setSenderName] = useState('')
   const [isAnonymous, setIsAnonymous] = useState(true)
@@ -46,6 +47,7 @@ export function LetterForm({ recipientName }: LetterFormProps) {
         formData.append('content', content)
         formData.append('senderName', senderName)
         formData.append('isAnonymous', isAnonymous.toString())
+        formData.append('recipientUsername', recipientUsername)
 
         const result = await sendLetter(formData)
 

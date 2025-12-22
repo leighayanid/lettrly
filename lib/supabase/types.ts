@@ -15,6 +15,7 @@ export type Database = {
           content: string
           sender_id: string | null
           sender_display_name: string | null
+          recipient_id: string | null
           is_anonymous: boolean
           is_read: boolean
           is_favorited: boolean
@@ -26,6 +27,7 @@ export type Database = {
           content: string
           sender_id?: string | null
           sender_display_name?: string | null
+          recipient_id?: string | null
           is_anonymous?: boolean
           is_read?: boolean
           is_favorited?: boolean
@@ -37,6 +39,7 @@ export type Database = {
           content?: string
           sender_id?: string | null
           sender_display_name?: string | null
+          recipient_id?: string | null
           is_anonymous?: boolean
           is_read?: boolean
           is_favorited?: boolean
@@ -59,6 +62,7 @@ export type Database = {
           email: string | null
           display_name: string | null
           avatar_url: string | null
+          username: string | null
           is_owner: boolean
           created_at: string
           updated_at: string
@@ -68,6 +72,7 @@ export type Database = {
           email?: string | null
           display_name?: string | null
           avatar_url?: string | null
+          username?: string | null
           is_owner?: boolean
           created_at?: string
           updated_at?: string
@@ -77,6 +82,7 @@ export type Database = {
           email?: string | null
           display_name?: string | null
           avatar_url?: string | null
+          username?: string | null
           is_owner?: boolean
           created_at?: string
           updated_at?: string

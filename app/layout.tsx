@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Crimson_Text, Caveat } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
 
 const crimson = Crimson_Text({
   subsets: ["latin"],
@@ -16,7 +16,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: APP_NAME,
+  title: `${APP_NAME} - ${APP_TAGLINE}`,
   description: APP_DESCRIPTION,
 };
 

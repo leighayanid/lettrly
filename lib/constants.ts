@@ -1,7 +1,7 @@
-export const APP_NAME = 'Write Me a Letter'
+export const APP_NAME = 'Lettrly'
+export const APP_TAGLINE = 'Write me a letter'
 export const APP_DESCRIPTION = 'A personal letter-writing web app where you can write and send letters through a beautiful paper-like interface.'
 
-export const OWNER_USERNAME = process.env.NEXT_PUBLIC_OWNER_USERNAME || 'leigh'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 export const MAX_LETTER_LENGTH = 5000

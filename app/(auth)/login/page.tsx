@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { APP_NAME } from '@/lib/constants'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 function LetterIllustration() {
   return (
@@ -357,8 +358,14 @@ export default function LoginPage() {
             </div>
 
             {/* Footer */}
-            <p className="text-center text-xs text-[var(--ink-faded)]">
-              This is a private inbox. Only the owner can sign in.
+            <p className="text-center text-sm text-[var(--ink-secondary)]">
+              Don&apos;t have an account?{' '}
+              <Link
+                href="/register"
+                className="text-[var(--wax-seal)] hover:underline font-medium"
+              >
+                Create one
+              </Link>
             </p>
           </div>
         </div>

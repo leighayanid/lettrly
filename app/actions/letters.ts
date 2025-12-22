@@ -4,12 +4,47 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { MAX_LETTER_LENGTH } from '@/lib/constants'
 
+export async function getProfileByUsername(username: string) {
+  const supabase = await createClient()
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url')
+    .eq('username', username.toLowerCase())
+    .single()
+
+  if (error || !profile) {
+    return { profile: null }
+  }
+
+  return { profile }
+}
+
+export async function getCurrentUserProfile() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { profile: null }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  return { profile }
+}
+
 export async function sendLetter(formData: FormData) {
   const supabase = await createClient()
 
   const content = formData.get('content') as string
   const senderName = formData.get('senderName') as string | null
   const isAnonymous = formData.get('isAnonymous') === 'true'
+  const recipientUsername = formData.get('recipientUsername') as string
 
   if (!content || content.trim().length === 0) {
     return { error: 'Letter content is required' }
@@ -19,6 +54,21 @@ export async function sendLetter(formData: FormData) {
     return { error: `Letter is too long (max ${MAX_LETTER_LENGTH} characters)` }
   }
 
+  if (!recipientUsername) {
+    return { error: 'Recipient not specified' }
+  }
+
+  // Look up the recipient by username
+  const { data: recipient } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', recipientUsername.toLowerCase())
+    .single()
+
+  if (!recipient) {
+    return { error: 'Recipient not found' }
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
 
   const { error } = await supabase.from('letters').insert({
@@ -26,6 +76,7 @@ export async function sendLetter(formData: FormData) {
     sender_id: isAnonymous ? null : user?.id,
     sender_display_name: senderName || null,
     is_anonymous: isAnonymous || !user,
+    recipient_id: recipient.id,
   })
 
   if (error) {

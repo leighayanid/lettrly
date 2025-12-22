@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { APP_NAME, OWNER_USERNAME } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import { AnimatedEnvelope } from "@/components/landing/animated-envelope";
 
 const fadeInUp = {
@@ -47,12 +47,20 @@ export default function Home() {
               {APP_NAME}
             </span>
           </div>
-          <Link
-            href="/login"
-            className="text-sm text-[var(--ink-secondary)] hover:text-[var(--wax-seal)] transition-colors font-medium"
-          >
-            Sign in
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-sm text-[var(--ink-secondary)] hover:text-[var(--wax-seal)] transition-colors font-medium"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="text-sm bg-[var(--wax-seal)] hover:bg-[#7a0000] text-white px-4 py-2 rounded-full transition-colors font-medium"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
       </motion.header>
 
@@ -82,7 +90,7 @@ export default function Home() {
           >
             <span className="w-2 h-2 rounded-full bg-[var(--wax-seal)] animate-pulse" />
             <span className="text-sm text-[var(--ink-secondary)]">
-              A personal space for heartfelt letters
+              {APP_TAGLINE}
             </span>
           </motion.div>
 
@@ -125,8 +133,8 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="text-xl md:text-2xl text-[var(--ink-secondary)] mb-10 max-w-2xl mx-auto leading-relaxed font-light"
           >
-            In a world of fleeting messages, take a moment to write something
-            meaningful. Your words will find their way to me.
+            Create your personal letter page and receive heartfelt messages
+            from friends, family, and admirers.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -137,10 +145,10 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Link
-              href={`/${OWNER_USERNAME}`}
+              href="/register"
               className="group relative inline-flex items-center gap-3 bg-[var(--wax-seal)] hover:bg-[#7a0000] text-white px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-medium overflow-hidden"
             >
-              <span className="relative z-10">Write a Letter</span>
+              <span className="relative z-10">Create Your Letter Page</span>
               <motion.span
                 className="relative z-10"
                 animate={{ x: [0, 4, 0] }}
@@ -152,7 +160,7 @@ export default function Home() {
             </Link>
 
             <span className="text-[var(--ink-faded)] text-sm">
-              No account required
+              Free forever
             </span>
           </motion.div>
 
@@ -194,7 +202,7 @@ export default function Home() {
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              <span>Anonymous Option</span>
+              <span>Anonymous Senders</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-[var(--ink-faded)]" />
             <div className="flex items-center gap-2">
@@ -208,10 +216,10 @@ export default function Home() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                 />
               </svg>
-              <span>Made with Love</span>
+              <span>Personal Link</span>
             </div>
           </motion.div>
         </div>
@@ -233,7 +241,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Features Section */}
+      {/* How it works Section */}
       <section className="py-32 px-6 bg-gradient-to-b from-[#faf8f5] to-white">
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -247,7 +255,85 @@ export default function Home() {
               variants={fadeInUp}
               className="inline-block text-[var(--wax-seal)] text-sm font-medium tracking-widest uppercase mb-4"
             >
-              Why Write a Letter
+              How It Works
+            </motion.span>
+            <motion.h2
+              variants={fadeInUp}
+              className="text-4xl md:text-5xl font-serif text-[var(--ink-primary)] mb-6"
+            >
+              Three Simple Steps
+            </motion.h2>
+            <motion.p
+              variants={fadeInUp}
+              className="text-lg text-[var(--ink-secondary)] max-w-2xl mx-auto"
+            >
+              Create your personal letter page in seconds and start receiving
+              heartfelt messages.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid md:grid-cols-3 gap-8"
+          >
+            {[
+              {
+                step: "1",
+                title: "Create Your Page",
+                description:
+                  "Sign up and choose your unique username. Your personal letter link will be lettrly.com/yourname.",
+              },
+              {
+                step: "2",
+                title: "Share Your Link",
+                description:
+                  "Share your letter link with friends, on social media, or anywhere you want to receive messages.",
+              },
+              {
+                step: "3",
+                title: "Receive Letters",
+                description:
+                  "Check your inbox for heartfelt letters. Writers can choose to stay anonymous or sign their name.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-[var(--wax-seal)] text-white flex items-center justify-center text-xl font-serif mx-auto mb-6">
+                  {item.step}
+                </div>
+                <h3 className="text-xl font-serif text-[var(--ink-primary)] mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-[var(--ink-secondary)] leading-relaxed">
+                  {item.description}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-32 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="text-center mb-20"
+          >
+            <motion.span
+              variants={fadeInUp}
+              className="inline-block text-[var(--wax-seal)] text-sm font-medium tracking-widest uppercase mb-4"
+            >
+              Why Lettrly
             </motion.span>
             <motion.h2
               variants={fadeInUp}
@@ -291,7 +377,7 @@ export default function Home() {
                 ),
                 title: "Completely Private",
                 description:
-                  "Your letters are delivered directly and securely. Only the intended recipient can read them.",
+                  "Your letters are delivered directly and securely. Only you can read them.",
               },
               {
                 icon: (
@@ -309,9 +395,9 @@ export default function Home() {
                     />
                   </svg>
                 ),
-                title: "Stay Anonymous",
+                title: "Anonymous Senders",
                 description:
-                  "Write openly without revealing your identity. Sometimes the best words come from anonymity.",
+                  "Letter writers can choose to stay anonymous. Sometimes the best words come without a name.",
               },
               {
                 icon: (
@@ -331,13 +417,13 @@ export default function Home() {
                 ),
                 title: "Take Your Time",
                 description:
-                  "No character limits, no rush. Craft your message thoughtfully, one word at a time.",
+                  "No character limits, no rush. Writers can craft their message thoughtfully.",
               },
             ].map((feature, index) => (
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
+                className="group relative bg-[#faf8f5] rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
               >
                 <div className="absolute top-0 left-8 w-16 h-1 bg-gradient-to-r from-[var(--envelope-tan)] to-[var(--wax-seal)] rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="text-[var(--wax-seal)] mb-6">{feature.icon}</div>
@@ -399,15 +485,14 @@ export default function Home() {
           className="max-w-2xl mx-auto text-center"
         >
           <h2 className="text-4xl md:text-5xl font-serif text-[var(--ink-primary)] mb-6">
-            Ready to write?
+            Ready to receive letters?
           </h2>
           <p className="text-lg text-[var(--ink-secondary)] mb-10">
-            Your words are waiting. Take a moment, gather your thoughts, and
-            let them flow onto the page.
+            Create your personal letter page today. It only takes a minute.
           </p>
 
           <Link
-            href={`/${OWNER_USERNAME}`}
+            href="/register"
             className="group relative inline-flex items-center gap-3 bg-[var(--ink-primary)] hover:bg-[var(--wax-seal)] text-white px-10 py-5 rounded-full shadow-lg hover:shadow-2xl transition-all text-xl font-medium"
           >
             <svg
@@ -420,10 +505,10 @@ export default function Home() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
               />
             </svg>
-            <span>Start Writing</span>
+            <span>Get Started Free</span>
           </Link>
         </motion.div>
       </section>
@@ -447,7 +532,13 @@ export default function Home() {
               href="/login"
               className="hover:text-[var(--wax-seal)] transition-colors"
             >
-              Owner Login
+              Sign In
+            </Link>
+            <Link
+              href="/register"
+              className="hover:text-[var(--wax-seal)] transition-colors"
+            >
+              Get Started
             </Link>
           </div>
         </div>

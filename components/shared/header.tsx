@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { APP_NAME, OWNER_USERNAME, APP_URL } from '@/lib/constants'
+import { APP_NAME, APP_URL } from '@/lib/constants'
 import { toast } from 'sonner'
 import {
   DropdownMenu,
@@ -16,13 +16,14 @@ import Link from 'next/link'
 
 interface HeaderProps {
   showBack?: boolean
+  username?: string
 }
 
-export function Header({ showBack = false }: HeaderProps) {
+export function Header({ showBack = false, username }: HeaderProps) {
   const router = useRouter()
   const supabase = createClient()
 
-  const letterLink = `${APP_URL}/${OWNER_USERNAME}`
+  const letterLink = username ? `${APP_URL}/${username}` : null
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -31,8 +32,10 @@ export function Header({ showBack = false }: HeaderProps) {
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(letterLink)
-    toast.success('Link copied to clipboard!')
+    if (letterLink) {
+      navigator.clipboard.writeText(letterLink)
+      toast.success('Link copied to clipboard!')
+    }
   }
 
   return (
@@ -58,14 +61,16 @@ export function Header({ showBack = false }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyLink}
-            className="border-[var(--paper-lines)] text-[var(--ink-secondary)]"
-          >
-            📋 Copy Letter Link
-          </Button>
+          {letterLink && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyLink}
+              className="border-[var(--paper-lines)] text-[var(--ink-secondary)]"
+            >
+              📋 Copy Letter Link
+            </Button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -81,18 +86,22 @@ export function Header({ showBack = false }: HeaderProps) {
               align="end"
               className="bg-[var(--paper-bg)] border-[var(--paper-lines)]"
             >
-              <DropdownMenuItem
-                onClick={handleCopyLink}
-                className="cursor-pointer"
-              >
-                📋 Copy Letter Link
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href={`/${OWNER_USERNAME}`} target="_blank">
-                  ✉️ View Letter Page
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
+              {username && (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleCopyLink}
+                    className="cursor-pointer"
+                  >
+                    📋 Copy Letter Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href={`/${username}`} target="_blank">
+                      ✉️ View Letter Page
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
+                </>
+              )}
               <DropdownMenuItem
                 onClick={handleSignOut}
                 className="cursor-pointer text-red-500"

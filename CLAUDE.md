@@ -1,10 +1,10 @@
-# Letter App - Claude Project Guide
+# Lettrly - Claude Project Guide
 
 ## Project Overview
 
 A personal letter-writing web app where visitors can write and send letters through a beautiful paper-like interface. Letters are private and only readable by the owner (Leigh). Senders can choose to remain anonymous or create an account.
 
-**Live URL structure:** `appname.com/leigh` or custom domain
+**Live URL structure:** `lettrly.com/leigh` or custom domain
 
 ---
 
@@ -26,7 +26,7 @@ A personal letter-writing web app where visitors can write and send letters thro
 ## Project Structure
 
 ```
-letter-app/
+lettrly/
 ├── app/
 │   ├── (public)/
 │   │   └── [username]/
@@ -95,9 +95,9 @@ letter-app/
 
 ```bash
 # Create Next.js 15 project
-pnpx create-next-app@latest letter-app --typescript --tailwind --eslint --app --src=false --import-alias "@/*"
+pnpx create-next-app@latest lettrly --typescript --tailwind --eslint --app --src=false --import-alias "@/*"
 
-cd letter-app
+cd lettrly
 
 # Install dependencies
 pnpm add @supabase/supabase-js @supabase/ssr framer-motion
