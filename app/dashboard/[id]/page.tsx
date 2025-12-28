@@ -1,4 +1,4 @@
-import { getLetter, markLetterAsRead, getCurrentUserProfile } from '@/app/actions/letters'
+import { getLetter, markLetterAsReadQuiet, getCurrentUserProfile } from '@/app/actions/letters'
 import { LetterView } from '@/components/dashboard/letter-view'
 import { Header } from '@/components/shared/header'
 import { APP_NAME } from '@/lib/constants'
@@ -38,9 +38,9 @@ export default async function LetterPage({ params }: PageProps) {
     notFound()
   }
 
-  // Mark as read if not already
+  // Mark as read if not already (use quiet version to avoid revalidatePath during render)
   if (!letter.is_read) {
-    await markLetterAsRead(id)
+    await markLetterAsReadQuiet(id)
   }
 
   return (

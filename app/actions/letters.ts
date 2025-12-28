@@ -129,6 +129,24 @@ export async function markLetterAsRead(id: string) {
   return { success: true }
 }
 
+// Version without revalidation - safe to call during render
+export async function markLetterAsReadQuiet(id: string) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  await queryOne(
+    `UPDATE letters
+     SET is_read = true, read_at = NOW()
+     WHERE id = $1 AND recipient_id = $2`,
+    [id, session.user.id]
+  )
+
+  return { success: true }
+}
+
 export async function toggleFavorite(id: string, isFavorited: boolean) {
   const session = await auth()
 
