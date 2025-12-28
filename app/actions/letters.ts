@@ -1,46 +1,39 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { query, queryOne } from '@/lib/db'
+import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { MAX_LETTER_LENGTH } from '@/lib/constants'
+import type { Profile, Letter } from '@/lib/db/types'
 
 export async function getProfileByUsername(username: string) {
-  const supabase = await createClient()
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('id, username, display_name, avatar_url')
-    .eq('username', username.toLowerCase())
-    .single()
-
-  if (error || !profile) {
-    return { profile: null }
-  }
+  const profile = await queryOne<Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url'>>(
+    'SELECT id, username, display_name, avatar_url FROM profiles WHERE username = $1',
+    [username.toLowerCase()]
+  )
 
   return { profile }
 }
 
 export async function getCurrentUserProfile() {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!session?.user?.id) {
     return { profile: null }
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const profile = await queryOne<Profile & { email: string }>(
+    `SELECT p.*, u.email
+     FROM profiles p
+     JOIN users u ON u.id = p.id
+     WHERE p.id = $1`,
+    [session.user.id]
+  )
 
   return { profile }
 }
 
 export async function sendLetter(formData: FormData) {
-  const supabase = await createClient()
-
   const content = formData.get('content') as string
   const senderName = formData.get('senderName') as string | null
   const isAnonymous = formData.get('isAnonymous') === 'true'
@@ -59,110 +52,113 @@ export async function sendLetter(formData: FormData) {
   }
 
   // Look up the recipient by username
-  const { data: recipient } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('username', recipientUsername.toLowerCase())
-    .single()
+  const recipient = await queryOne<{ id: string }>(
+    'SELECT id FROM profiles WHERE username = $1',
+    [recipientUsername.toLowerCase()]
+  )
 
   if (!recipient) {
     return { error: 'Recipient not found' }
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
+  const senderId = isAnonymous ? null : session?.user?.id
 
-  const { error } = await supabase.from('letters').insert({
-    content: content.trim(),
-    sender_id: isAnonymous ? null : user?.id,
-    sender_display_name: senderName || null,
-    is_anonymous: isAnonymous || !user,
-    recipient_id: recipient.id,
-  })
-
-  if (error) {
-    console.error('Error sending letter:', error)
-    return { error: 'Failed to send letter' }
-  }
+  await queryOne(
+    `INSERT INTO letters (content, sender_id, sender_display_name, is_anonymous, recipient_id)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [content.trim(), senderId, senderName || null, isAnonymous || !session?.user, recipient.id]
+  )
 
   return { success: true }
 }
 
 export async function getLetters() {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { data: letters, error } = await supabase
-    .from('letters')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching letters:', error)
-    return { error: 'Failed to fetch letters', letters: [] }
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized', letters: [] }
   }
+
+  const letters = await query<Letter>(
+    `SELECT * FROM letters
+     WHERE recipient_id = $1
+     ORDER BY created_at DESC`,
+    [session.user.id]
+  )
 
   return { letters }
 }
 
 export async function getLetter(id: string) {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { data: letter, error } = await supabase
-    .from('letters')
-    .select('*')
-    .eq('id', id)
-    .single()
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized', letter: null }
+  }
 
-  if (error) {
-    console.error('Error fetching letter:', error)
-    return { error: 'Failed to fetch letter', letter: null }
+  const letter = await queryOne<Letter>(
+    `SELECT * FROM letters
+     WHERE id = $1 AND recipient_id = $2`,
+    [id, session.user.id]
+  )
+
+  if (!letter) {
+    return { error: 'Letter not found', letter: null }
   }
 
   return { letter }
 }
 
 export async function markLetterAsRead(id: string) {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { error } = await supabase
-    .from('letters')
-    .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq('id', id)
-
-  if (error) {
-    console.error('Error marking letter as read:', error)
-    return { error: 'Failed to mark letter as read' }
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized' }
   }
+
+  await queryOne(
+    `UPDATE letters
+     SET is_read = true, read_at = NOW()
+     WHERE id = $1 AND recipient_id = $2`,
+    [id, session.user.id]
+  )
 
   revalidatePath('/dashboard')
   return { success: true }
 }
 
 export async function toggleFavorite(id: string, isFavorited: boolean) {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { error } = await supabase
-    .from('letters')
-    .update({ is_favorited: !isFavorited })
-    .eq('id', id)
-
-  if (error) {
-    console.error('Error toggling favorite:', error)
-    return { error: 'Failed to toggle favorite' }
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized' }
   }
+
+  await queryOne(
+    `UPDATE letters
+     SET is_favorited = $1
+     WHERE id = $2 AND recipient_id = $3`,
+    [!isFavorited, id, session.user.id]
+  )
 
   revalidatePath('/dashboard')
   return { success: true }
 }
 
 export async function deleteLetter(id: string) {
-  const supabase = await createClient()
+  const session = await auth()
 
-  const { error } = await supabase.from('letters').delete().eq('id', id)
-
-  if (error) {
-    console.error('Error deleting letter:', error)
-    return { error: 'Failed to delete letter' }
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized' }
   }
+
+  await queryOne(
+    `DELETE FROM letters
+     WHERE id = $1 AND recipient_id = $2`,
+    [id, session.user.id]
+  )
 
   revalidatePath('/dashboard')
   return { success: true }

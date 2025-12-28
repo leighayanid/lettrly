@@ -1,10 +1,12 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { APP_NAME, APP_URL } from '@/lib/constants'
 import { toast } from 'sonner'
+import { useNotifications } from '@/lib/contexts/notification-context'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +23,12 @@ interface HeaderProps {
 
 export function Header({ showBack = false, username }: HeaderProps) {
   const router = useRouter()
-  const supabase = createClient()
+  const { unreadCount } = useNotifications()
 
   const letterLink = username ? `${APP_URL}/${username}` : null
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await signOut({ redirect: false })
     router.push('/login')
     router.refresh()
   }
@@ -54,13 +56,49 @@ export function Header({ showBack = false, username }: HeaderProps) {
           )}
           <Link
             href="/dashboard"
-            className="font-serif text-xl text-[var(--ink-primary)] hover:text-[var(--wax-seal)] transition-colors"
+            className="font-serif text-xl text-[var(--ink-primary)] hover:text-[var(--wax-seal)] transition-colors relative"
           >
             {APP_NAME}
+            {/* Notification badge */}
+            <AnimatePresence>
+              {unreadCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-1 -right-4 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-xs font-bold bg-[var(--wax-seal)] text-white rounded-full"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Inbox button with notification badge */}
+          <Link href="/dashboard" className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[var(--ink-secondary)] relative"
+            >
+              Inbox
+              <AnimatePresence>
+                {unreadCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 flex items-center justify-center text-[10px] font-bold bg-[var(--wax-seal)] text-white rounded-full"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Button>
+          </Link>
+
           {letterLink && (
             <Button
               variant="outline"
@@ -68,7 +106,7 @@ export function Header({ showBack = false, username }: HeaderProps) {
               onClick={handleCopyLink}
               className="border-[var(--paper-lines)] text-[var(--ink-secondary)]"
             >
-              📋 Copy Letter Link
+              Copy Letter Link
             </Button>
           )}
 
@@ -79,7 +117,7 @@ export function Header({ showBack = false, username }: HeaderProps) {
                 size="sm"
                 className="text-[var(--ink-secondary)]"
               >
-                ⚙️
+                Settings
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -92,11 +130,11 @@ export function Header({ showBack = false, username }: HeaderProps) {
                     onClick={handleCopyLink}
                     className="cursor-pointer"
                   >
-                    📋 Copy Letter Link
+                    Copy Letter Link
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href={`/${username}`} target="_blank">
-                      ✉️ View Letter Page
+                      View Letter Page
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
@@ -106,7 +144,7 @@ export function Header({ showBack = false, username }: HeaderProps) {
                 onClick={handleSignOut}
                 className="cursor-pointer text-red-500"
               >
-                🚪 Sign Out
+                Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

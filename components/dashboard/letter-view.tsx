@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Tables } from '@/lib/supabase/types'
+import { Letter } from '@/lib/db/types'
 import { Paper } from '@/components/letter/paper'
 import { Button } from '@/components/ui/button'
 import { toggleFavorite, deleteLetter } from '@/app/actions/letters'
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog'
 
 interface LetterViewProps {
-  letter: Tables<'letters'>
+  letter: Letter
 }
 
 export function LetterView({ letter }: LetterViewProps) {

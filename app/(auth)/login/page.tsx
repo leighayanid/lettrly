@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -190,20 +190,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
         email,
         password,
+        redirect: false,
       })
 
-      if (error) {
-        toast.error(error.message)
+      if (result?.error) {
+        toast.error('Invalid email or password')
         return
       }
 
@@ -212,35 +212,6 @@ export default function LoginPage() {
       router.refresh()
     } catch {
       toast.error('An error occurred during login')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleMagicLink = async () => {
-    if (!email) {
-      toast.error('Please enter your email')
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) {
-        toast.error(error.message)
-        return
-      }
-
-      toast.success('Check your email for a magic link!')
-    } catch {
-      toast.error('An error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -311,6 +282,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
+                    required
                     className="bg-white/50 border-[var(--paper-lines)] focus:border-[var(--envelope-tan)] focus:ring-[var(--envelope-tan)]/20"
                   />
                 </div>
@@ -322,39 +294,6 @@ export default function LoginPage() {
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-[var(--paper-lines)]" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-[var(--paper-bg)] px-3 text-[var(--ink-faded)]">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleMagicLink}
-                disabled={isLoading}
-                className="w-full border-[var(--paper-lines)] text-[var(--ink-secondary)] hover:bg-amber-50/50 py-5"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                Send Magic Link
-              </Button>
             </div>
 
             {/* Footer */}

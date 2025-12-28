@@ -64,8 +64,8 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 pt-20">
+      {/* Hero Section - Two Column Layout */}
+      <section className="relative min-h-screen flex items-center px-6 pt-24 pb-16">
         {/* Decorative elements */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -80,148 +80,159 @@ export default function Home() {
           className="absolute bottom-1/4 right-10 w-96 h-96 bg-[var(--wax-seal)] rounded-full blur-3xl"
         />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-[var(--envelope-tan)]/30 rounded-full px-4 py-2 mb-8 shadow-sm"
-          >
-            <span className="w-2 h-2 rounded-full bg-[var(--wax-seal)] animate-pulse" />
-            <span className="text-sm text-[var(--ink-secondary)]">
-              {APP_TAGLINE}
-            </span>
-          </motion.div>
-
-          {/* Envelope Animation */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-12"
-          >
-            <AnimatedEnvelope />
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-5xl md:text-7xl font-serif text-[var(--ink-primary)] mb-6 leading-tight tracking-tight"
-          >
-            Words that{" "}
-            <span className="relative">
-              <span className="relative z-10">matter</span>
-              <motion.span
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.6, delay: 1 }}
-                className="absolute bottom-2 left-0 right-0 h-3 bg-[var(--envelope-tan)]/30 -z-0"
-                style={{ originX: 0 }}
-              />
-            </span>
-            ,
-            <br />
-            <span className="text-[var(--wax-seal)]">delivered with care</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="text-xl md:text-2xl text-[var(--ink-secondary)] mb-10 max-w-2xl mx-auto leading-relaxed font-light"
-          >
-            Create your personal letter page and receive heartfelt messages
-            from friends, family, and admirers.
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <Link
-              href="/register"
-              className="group relative inline-flex items-center gap-3 bg-[var(--wax-seal)] hover:bg-[#7a0000] text-white px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-medium overflow-hidden"
-            >
-              <span className="relative z-10">Create Your Letter Page</span>
-              <motion.span
-                className="relative z-10"
-                animate={{ x: [0, 4, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+        <div className="max-w-7xl mx-auto w-full relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Column - Text Content */}
+            <div className="order-2 lg:order-1">
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-[var(--envelope-tan)]/30 rounded-full px-4 py-2 mb-8 shadow-sm"
               >
-                →
-              </motion.span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            </Link>
+                <span className="w-2 h-2 rounded-full bg-[var(--wax-seal)] animate-pulse" />
+                <span className="text-sm text-[var(--ink-secondary)]">
+                  {APP_TAGLINE}
+                </span>
+              </motion.div>
 
-            <span className="text-[var(--ink-faded)] text-sm">
-              Free forever
-            </span>
-          </motion.div>
-
-          {/* Trust indicators */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="mt-16 flex items-center justify-center gap-8 text-[var(--ink-faded)] text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              {/* Headline */}
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-serif text-[var(--ink-primary)] mb-6 leading-tight tracking-tight"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <span>Private & Secure</span>
+                Words that{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10">matter</span>
+                  <motion.span
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.6, delay: 1 }}
+                    className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-2 sm:h-3 bg-[var(--envelope-tan)]/30 -z-0"
+                    style={{ originX: 0 }}
+                  />
+                </span>
+                ,
+                <br />
+                <span className="text-[var(--wax-seal)]">delivered with care</span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-lg sm:text-xl lg:text-2xl text-[var(--ink-secondary)] mb-10 leading-relaxed font-light max-w-xl"
+              >
+                Create your personal letter page and receive heartfelt messages
+                from friends, family, and admirers.
+              </motion.p>
+
+              {/* CTA Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="flex flex-col sm:flex-row gap-4 items-start"
+              >
+                <Link
+                  href="/register"
+                  className="group relative inline-flex items-center gap-3 bg-[var(--wax-seal)] hover:bg-[#7a0000] text-white px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-medium overflow-hidden"
+                >
+                  <span className="relative z-10">Create Your Letter Page</span>
+                  <motion.span
+                    className="relative z-10"
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </Link>
+
+                <span className="text-[var(--ink-faded)] text-sm self-center">
+                  Free forever
+                </span>
+              </motion.div>
+
+              {/* Trust indicators */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 text-[var(--ink-faded)] text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                  <span>Private & Secure</span>
+                </div>
+                <div className="hidden sm:block w-1 h-1 rounded-full bg-[var(--ink-faded)]" />
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  <span>Anonymous Senders</span>
+                </div>
+                <div className="hidden sm:block w-1 h-1 rounded-full bg-[var(--ink-faded)]" />
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                    />
+                  </svg>
+                  <span>Personal Link</span>
+                </div>
+              </motion.div>
             </div>
-            <div className="w-1 h-1 rounded-full bg-[var(--ink-faded)]" />
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+
+            {/* Right Column - Envelope Animation */}
+            <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span>Anonymous Senders</span>
+                {/* Decorative glow behind envelope */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--envelope-tan)]/20 to-[var(--wax-seal)]/10 rounded-full blur-3xl scale-150" />
+                <div className="relative">
+                  <AnimatedEnvelope />
+                </div>
+              </motion.div>
             </div>
-            <div className="w-1 h-1 rounded-full bg-[var(--ink-faded)]" />
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                />
-              </svg>
-              <span>Personal Link</span>
-            </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Scroll indicator */}

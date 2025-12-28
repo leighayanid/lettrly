@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A personal letter-writing web app where visitors can write and send letters through a beautiful paper-like interface. Letters are private and only readable by the owner (Leigh). Senders can choose to remain anonymous or create an account.
+A personal letter-writing web app where visitors can write and send letters through a beautiful paper-like interface. Letters are private and only readable by the recipient. Senders can choose to remain anonymous or create an account.
 
 **Live URL structure:** `lettrly.com/leigh` or custom domain
 
@@ -12,13 +12,13 @@ A personal letter-writing web app where visitors can write and send letters thro
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Framework | Next.js (App Router) | 15.x |
+| Framework | Next.js (App Router) | 16.x |
 | Language | TypeScript | 5.x |
 | Styling | Tailwind CSS | 4.x |
 | UI Components | shadcn/ui | latest |
-| Animations | Framer Motion | 11.x |
-| Database & Auth | Supabase | latest |
-| Local Dev | Supabase CLI | latest |
+| Animations | Framer Motion | 12.x |
+| Database | PostgreSQL (Docker) | 16.x |
+| Auth | Auth.js (NextAuth v5) | beta |
 | Package Manager | pnpm | latest |
 
 ---
@@ -33,10 +33,16 @@ lettrly/
 │   │       └── page.tsx          # Public letter writing page
 │   ├── (auth)/
 │   │   ├── login/
-│   │   │   └── page.tsx          # Owner login
+│   │   │   └── page.tsx          # Login page
+│   │   └── register/
+│   │       └── page.tsx          # Registration page
+│   ├── api/
 │   │   └── auth/
-│   │       └── callback/
-│   │           └── route.ts      # Supabase auth callback
+│   │       └── [...nextauth]/
+│   │           └── route.ts      # Auth.js API route
+│   ├── actions/
+│   │   ├── auth.ts               # Auth server actions
+│   │   └── letters.ts            # Letter server actions
 │   ├── dashboard/
 │   │   ├── page.tsx              # Letter inbox
 │   │   └── [id]/
@@ -46,6 +52,7 @@ lettrly/
 │   └── globals.css
 ├── components/
 │   ├── ui/                       # shadcn/ui components
+│   ├── providers.tsx             # Session provider wrapper
 │   ├── letter/
 │   │   ├── paper.tsx             # Paper writing surface
 │   │   ├── letter-form.tsx       # Letter composition form
@@ -59,27 +66,21 @@ lettrly/
 │       ├── header.tsx
 │       └── loading.tsx
 ├── lib/
-│   ├── supabase/
-│   │   ├── client.ts             # Browser client
-│   │   ├── server.ts             # Server client
-│   │   ├── middleware.ts         # Auth middleware helper
-│   │   └── types.ts              # Generated DB types
+│   ├── db/
+│   │   ├── index.ts              # PostgreSQL connection pool
+│   │   └── types.ts              # Database type definitions
+│   ├── auth.ts                   # Auth.js configuration
 │   ├── utils.ts                  # General utilities (cn, etc.)
 │   └── constants.ts              # App constants
-├── hooks/
-│   ├── use-letters.ts            # Letter data hooks
-│   └── use-auth.ts               # Auth state hooks
-├── supabase/
-│   ├── config.toml               # Supabase local config
-│   ├── migrations/
-│   │   └── 00001_initial_schema.sql
-│   └── seed.sql                  # Optional seed data
+├── db/
+│   └── init.sql                  # Database initialization script
 ├── public/
 │   ├── textures/
 │   │   └── paper.png             # Paper texture
 │   └── fonts/                    # Custom handwriting fonts
 ├── .env.local                    # Local environment variables
 ├── .env.example
+├── docker-compose.yml            # PostgreSQL container config
 ├── middleware.ts                 # Next.js middleware for auth
 ├── next.config.ts
 ├── tailwind.config.ts
@@ -94,13 +95,16 @@ lettrly/
 ### Initial Project Setup
 
 ```bash
-# Create Next.js 15 project
+# Create Next.js project
 pnpx create-next-app@latest lettrly --typescript --tailwind --eslint --app --src=false --import-alias "@/*"
 
 cd lettrly
 
 # Install dependencies
-pnpm add @supabase/supabase-js @supabase/ssr framer-motion
+pnpm add pg next-auth@beta bcryptjs @auth/pg-adapter framer-motion
+
+# Install type definitions
+pnpm add -D @types/pg
 
 # Install shadcn/ui
 pnpx shadcn@latest init
@@ -109,166 +113,101 @@ pnpx shadcn@latest init
 pnpx shadcn@latest add button card input textarea label toast avatar dropdown-menu dialog scroll-area badge separator
 ```
 
-### Supabase CLI Setup
+### Database Setup (Docker)
 
 ```bash
-# Install Supabase CLI (if not installed globally)
-pnpm add -D supabase
+# Start PostgreSQL container (requires Docker)
+docker compose up -d
 
-# Initialize Supabase in project
-pnpx supabase init
+# The database will be initialized automatically with db/init.sql
 
-# Start local Supabase (requires Docker)
-pnpx supabase start
+# Stop the database
+docker compose down
 
-# After start, CLI outputs local credentials - add to .env.local:
-# NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key-from-cli>
-# SUPABASE_SERVICE_ROLE_KEY=<service-role-key-from-cli>
-
-# Generate TypeScript types from schema
-pnpx supabase gen types typescript --local > lib/supabase/types.ts
-
-# Apply migrations
-pnpx supabase db push
-
-# Stop local Supabase
-pnpx supabase stop
+# Reset database (removes all data)
+docker compose down -v && docker compose up -d
 ```
 
 ---
 
 ## Database Schema
 
-### Migration: `supabase/migrations/00001_initial_schema.sql`
+### `db/init.sql`
 
 ```sql
 -- Enable UUID extension
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (extends Supabase auth.users)
-create table public.profiles (
-  id uuid references auth.users on delete cascade primary key,
-  email text,
-  display_name text,
-  avatar_url text,
-  is_owner boolean default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- Auth.js Required Tables
+CREATE TABLE users (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT,
+  email TEXT UNIQUE NOT NULL,
+  email_verified TIMESTAMPTZ,
+  image TEXT,
+  password_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Letters table
-create table public.letters (
-  id uuid default uuid_generate_v4() primary key,
-  content text not null,
-  sender_id uuid references public.profiles(id) on delete set null,
-  sender_display_name text, -- For anonymous users who want to leave a name
-  is_anonymous boolean default true,
-  is_read boolean default false,
-  is_favorited boolean default false,
-  created_at timestamptz default now(),
-  read_at timestamptz
+CREATE TABLE accounts (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  provider_account_id TEXT NOT NULL,
+  refresh_token TEXT,
+  access_token TEXT,
+  expires_at INTEGER,
+  token_type TEXT,
+  scope TEXT,
+  id_token TEXT,
+  session_state TEXT,
+  UNIQUE(provider, provider_account_id)
+);
+
+CREATE TABLE sessions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  session_token TEXT UNIQUE NOT NULL,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE verification_token (
+  identifier TEXT NOT NULL,
+  token TEXT NOT NULL,
+  expires TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (identifier, token)
+);
+
+-- Application Tables
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE,
+  display_name TEXT,
+  avatar_url TEXT,
+  is_owner BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE letters (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  content TEXT NOT NULL,
+  sender_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  sender_display_name TEXT,
+  recipient_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  is_anonymous BOOLEAN DEFAULT TRUE,
+  is_read BOOLEAN DEFAULT FALSE,
+  is_favorited BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ
 );
 
 -- Indexes
-create index letters_created_at_idx on public.letters(created_at desc);
-create index letters_is_read_idx on public.letters(is_read);
-
--- Row Level Security
-alter table public.profiles enable row level security;
-alter table public.letters enable row level security;
-
--- Profiles policies
-create policy "Public profiles are viewable by everyone"
-  on public.profiles for select
-  using (true);
-
-create policy "Users can update own profile"
-  on public.profiles for update
-  using (auth.uid() = id);
-
--- Letters policies
--- Anyone can insert a letter (public submission)
-create policy "Anyone can send a letter"
-  on public.letters for insert
-  with check (true);
-
--- Only owner can read letters
-create policy "Only owner can read letters"
-  on public.letters for select
-  using (
-    exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.is_owner = true
-    )
-  );
-
--- Only owner can update letters (mark read, favorite, etc.)
-create policy "Only owner can update letters"
-  on public.letters for update
-  using (
-    exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.is_owner = true
-    )
-  );
-
--- Only owner can delete letters
-create policy "Only owner can delete letters"
-  on public.letters for delete
-  using (
-    exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.is_owner = true
-    )
-  );
-
--- Function to handle new user signup
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, email, display_name, avatar_url)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
-    new.raw_user_meta_data->>'avatar_url'
-  );
-  return new;
-end;
-$$ language plpgsql security definer;
-
--- Trigger for new user signup
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
--- Function to update updated_at timestamp
-create or replace function public.update_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
-create trigger profiles_updated_at
-  before update on public.profiles
-  for each row execute procedure public.update_updated_at();
-```
-
-### Seed: `supabase/seed.sql`
-
-```sql
--- Seed owner account after auth user is created manually
--- Run this after creating your owner account via Supabase dashboard or auth signup
-
--- UPDATE public.profiles
--- SET is_owner = true
--- WHERE email = 'your-email@example.com';
+CREATE INDEX letters_created_at_idx ON letters(created_at DESC);
+CREATE INDEX letters_recipient_id_idx ON letters(recipient_id);
+CREATE INDEX profiles_username_idx ON profiles(username);
 ```
 
 ---
@@ -278,15 +217,11 @@ create trigger profiles_updated_at
 ### `.env.example`
 
 ```env
-# Supabase - Local Development (from `supabase start` output)
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
+# Database - Docker PostgreSQL
+DATABASE_URL=postgresql://lettrly:lettrly_dev_password@localhost:5432/lettrly
 
-# Supabase - Production (from Supabase dashboard)
-# NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
-# SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
+# Auth.js
+AUTH_SECRET=your-auth-secret-here-generate-with-openssl-rand-base64-32
 
 # App Config
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -297,96 +232,118 @@ NEXT_PUBLIC_OWNER_USERNAME=leigh
 
 ## Key Implementation Files
 
-### `lib/supabase/client.ts`
+### `lib/db/index.ts`
 
 ```typescript
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from './types'
+import { Pool } from 'pg'
 
-export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+export { pool }
+
+export async function query<T>(text: string, params?: unknown[]): Promise<T[]> {
+  const result = await pool.query(text, params)
+  return result.rows as T[]
+}
+
+export async function queryOne<T>(text: string, params?: unknown[]): Promise<T | null> {
+  const result = await pool.query(text, params)
+  return (result.rows[0] as T) || null
 }
 ```
 
-### `lib/supabase/server.ts`
+### `lib/auth.ts`
 
 ```typescript
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { Database } from './types'
+import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
+import { compare } from 'bcryptjs'
+import PostgresAdapter from '@auth/pg-adapter'
+import { pool, queryOne } from '@/lib/db'
 
-export async function createClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Handle server component context
-          }
-        },
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: PostgresAdapter(pool),
+  session: { strategy: 'jwt' },
+  pages: {
+    signIn: '/login',
+  },
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
-    }
-  )
-}
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const user = await queryOne(
+          'SELECT * FROM users WHERE email = $1',
+          [credentials.email]
+        )
+
+        if (!user || !user.password_hash) {
+          return null
+        }
+
+        const isValid = await compare(credentials.password, user.password_hash)
+
+        if (!isValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string
+
+        const profile = await queryOne(
+          'SELECT username FROM profiles WHERE id = $1',
+          [token.id]
+        )
+        if (profile) {
+          session.user.username = profile.username
+        }
+      }
+      return session
+    },
+  },
+})
 ```
 
 ### `middleware.ts`
 
 ```typescript
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { auth } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  })
+export default auth((req) => {
+  const isLoggedIn = !!req.auth
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          response = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Protect dashboard routes
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (req.nextUrl.pathname.startsWith('/dashboard') && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  return response
-}
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: ['/dashboard/:path*'],
@@ -395,142 +352,54 @@ export const config = {
 
 ---
 
-## UI Component Guidelines
+## Server Actions
 
-### Paper Component Styling
-
-The paper writing surface should feel tactile and realistic:
+### `app/actions/letters.ts`
 
 ```typescript
-// Tailwind classes for paper effect
-const paperClasses = `
-  relative
-  bg-[#fdfbf7]
-  bg-[url('/textures/paper.png')]
-  rounded-sm
-  shadow-[0_1px_3px_rgba(0,0,0,0.12),_0_1px_2px_rgba(0,0,0,0.24)]
-  before:absolute
-  before:inset-0
-  before:bg-[linear-gradient(transparent_31px,_#e5e5e5_31px)]
-  before:bg-[size:100%_32px]
-  before:pointer-events-none
-`
-
-// Textarea should be invisible, blending with paper
-const textareaClasses = `
-  bg-transparent
-  border-none
-  outline-none
-  resize-none
-  font-serif
-  text-[#333]
-  leading-8
-  p-8
-  pt-10
-  w-full
-  h-full
-  placeholder:text-gray-400/60
-`
-```
-
-### Framer Motion Animation Patterns
-
-```typescript
-// Envelope seal animation
-const envelopeVariants = {
-  open: { rotateX: 0 },
-  closed: { rotateX: 180 },
-}
-
-// Paper fold animation
-const paperVariants = {
-  flat: { scaleY: 1 },
-  folded: { scaleY: 0.5, y: 50 },
-}
-
-// Success stamp animation
-const stampVariants = {
-  hidden: { scale: 0, rotate: -30 },
-  visible: {
-    scale: 1,
-    rotate: 0,
-    transition: { type: 'spring', stiffness: 300, damping: 15 }
-  },
-}
-```
-
----
-
-## API Routes / Server Actions
-
-Prefer Server Actions for mutations:
-
-```typescript
-// app/actions/letters.ts
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { query, queryOne } from '@/lib/db'
+import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 export async function sendLetter(formData: FormData) {
-  const supabase = await createClient()
-  
   const content = formData.get('content') as string
-  const senderName = formData.get('senderName') as string | null
-  const isAnonymous = formData.get('isAnonymous') === 'true'
+  const recipientUsername = formData.get('recipientUsername') as string
 
-  if (!content || content.trim().length === 0) {
-    return { error: 'Letter content is required' }
+  const recipient = await queryOne(
+    'SELECT id FROM profiles WHERE username = $1',
+    [recipientUsername.toLowerCase()]
+  )
+
+  if (!recipient) {
+    return { error: 'Recipient not found' }
   }
 
-  if (content.length > 5000) {
-    return { error: 'Letter is too long (max 5000 characters)' }
-  }
+  const session = await auth()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { error } = await supabase.from('letters').insert({
-    content: content.trim(),
-    sender_id: isAnonymous ? null : user?.id,
-    sender_display_name: senderName || null,
-    is_anonymous: isAnonymous || !user,
-  })
-
-  if (error) {
-    return { error: 'Failed to send letter' }
-  }
+  await queryOne(
+    `INSERT INTO letters (content, sender_id, recipient_id)
+     VALUES ($1, $2, $3)`,
+    [content.trim(), session?.user?.id || null, recipient.id]
+  )
 
   return { success: true }
 }
 
-export async function markLetterAsRead(id: string) {
-  const supabase = await createClient()
-  
-  await supabase
-    .from('letters')
-    .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq('id', id)
+export async function getLetters() {
+  const session = await auth()
 
-  revalidatePath('/dashboard')
-}
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized', letters: [] }
+  }
 
-export async function toggleFavorite(id: string, isFavorited: boolean) {
-  const supabase = await createClient()
-  
-  await supabase
-    .from('letters')
-    .update({ is_favorited: !isFavorited })
-    .eq('id', id)
+  const letters = await query(
+    `SELECT * FROM letters WHERE recipient_id = $1 ORDER BY created_at DESC`,
+    [session.user.id]
+  )
 
-  revalidatePath('/dashboard')
-}
-
-export async function deleteLetter(id: string) {
-  const supabase = await createClient()
-  
-  await supabase.from('letters').delete().eq('id', id)
-
-  revalidatePath('/dashboard')
+  return { letters }
 }
 ```
 
@@ -541,45 +410,24 @@ export async function deleteLetter(id: string) {
 ### Daily Development
 
 ```bash
-# Start Supabase local
-pnpx supabase start
+# Start PostgreSQL container
+docker compose up -d
 
 # Start Next.js dev server
 pnpm dev
 
 # Access:
 # - App: http://localhost:3000
-# - Supabase Studio: http://127.0.0.1:54323
-# - Supabase API: http://127.0.0.1:54321
+# - Database: localhost:5432 (use any PostgreSQL client)
 ```
 
 ### Database Changes
 
 ```bash
-# Create new migration
-pnpx supabase migration new migration_name
+# Edit db/init.sql with your changes
 
-# Apply migrations locally
-pnpx supabase db push
-
-# Reset database (careful!)
-pnpx supabase db reset
-
-# Regenerate types after schema changes
-pnpx supabase gen types typescript --local > lib/supabase/types.ts
-```
-
-### Deployment
-
-```bash
-# Link to Supabase project
-pnpx supabase link --project-ref your-project-ref
-
-# Push migrations to production
-pnpx supabase db push
-
-# Deploy to Vercel
-vercel deploy --prod
+# Reset database to apply changes
+docker compose down -v && docker compose up -d
 ```
 
 ---
@@ -593,12 +441,12 @@ vercel deploy --prod
   --paper-bg: #fdfbf7;
   --paper-lines: #e5e5e5;
   --paper-shadow: rgba(0, 0, 0, 0.12);
-  
+
   /* Ink colors */
   --ink-primary: #1a1a2e;
   --ink-secondary: #4a4a5a;
   --ink-faded: #8a8a9a;
-  
+
   /* Accent */
   --envelope-tan: #d4a574;
   --wax-seal: #8b0000;
@@ -610,20 +458,16 @@ vercel deploy --prod
 
 ## Fonts
 
-Recommended handwriting/serif fonts for letter feel:
-
 ```typescript
-// next.config.ts or layout.tsx
+// layout.tsx
 import { Crimson_Text, Caveat } from 'next/font/google'
 
-// Elegant serif for body text
 const crimson = Crimson_Text({
   subsets: ['latin'],
   weight: ['400', '600'],
   variable: '--font-serif',
 })
 
-// Handwriting style for signatures/names
 const caveat = Caveat({
   subsets: ['latin'],
   variable: '--font-handwriting',
@@ -632,54 +476,25 @@ const caveat = Caveat({
 
 ---
 
-## Rate Limiting (Optional Enhancement)
-
-Use Supabase Edge Functions or Next.js middleware:
-
-```typescript
-// Simple in-memory rate limit for MVP
-const rateLimitMap = new Map<string, number[]>()
-
-export function checkRateLimit(ip: string, limit = 5, windowMs = 60000): boolean {
-  const now = Date.now()
-  const windowStart = now - windowMs
-  
-  const requests = rateLimitMap.get(ip) || []
-  const recentRequests = requests.filter(time => time > windowStart)
-  
-  if (recentRequests.length >= limit) {
-    return false
-  }
-  
-  recentRequests.push(now)
-  rateLimitMap.set(ip, recentRequests)
-  return true
-}
-```
-
----
-
 ## Testing Checklist
 
 - [ ] Anonymous letter submission works
 - [ ] Authenticated letter submission works
-- [ ] Owner can view all letters
-- [ ] Non-owner cannot access dashboard
+- [ ] User can view their letters
+- [ ] Non-authenticated users cannot access dashboard
 - [ ] Letters marked as read correctly
 - [ ] Favorite toggle works
 - [ ] Delete removes letter
 - [ ] Paper UI renders correctly on mobile
 - [ ] Animations perform smoothly
-- [ ] Rate limiting prevents spam
 
 ---
 
 ## Future Enhancements
 
 1. **Email notifications** - Send email when new letter arrives
-2. **Multiple recipients** - Platform mode for multiple users
-3. **Letter templates** - Pre-designed paper styles
-4. **Attachments** - Small image uploads
-5. **Handwriting mode** - Canvas-based actual drawing
-6. **Export** - Download letters as PDF
-7. **Analytics** - Letter count, read rate, etc.
+2. **Letter templates** - Pre-designed paper styles
+3. **Attachments** - Small image uploads
+4. **Handwriting mode** - Canvas-based actual drawing
+5. **Export** - Download letters as PDF
+6. **Analytics** - Letter count, read rate, etc.

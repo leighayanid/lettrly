@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +8,7 @@ import { APP_NAME, APP_URL } from '@/lib/constants'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { registerUser, checkUsernameAvailable } from '@/app/actions/auth'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -19,15 +19,13 @@ export default function RegisterPage() {
   const [isCheckingUsername, setIsCheckingUsername] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
-  const checkUsername = async (value: string) => {
+  const checkUsername = useCallback(async (value: string) => {
     if (!value || value.length < 3) {
       setUsernameAvailable(null)
       return
     }
 
-    // Only allow alphanumeric and underscores
     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
       setUsernameAvailable(false)
       return
@@ -35,19 +33,14 @@ export default function RegisterPage() {
 
     setIsCheckingUsername(true)
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', value.toLowerCase())
-        .single()
-
-      setUsernameAvailable(!data)
+      const { available } = await checkUsernameAvailable(value)
+      setUsernameAvailable(available)
     } catch {
-      setUsernameAvailable(true)
+      setUsernameAvailable(null)
     } finally {
       setIsCheckingUsername(false)
     }
-  }
+  }, [])
 
   const handleUsernameChange = (value: string) => {
     const sanitized = value.toLowerCase().replace(/[^a-z0-9_]/g, '')
@@ -76,24 +69,22 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username.toLowerCase(),
-            display_name: displayName || username,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
+      const formData = new FormData()
+      formData.append('email', email)
+      formData.append('password', password)
+      formData.append('username', username)
+      if (displayName) {
+        formData.append('displayName', displayName)
+      }
 
-      if (error) {
-        toast.error(error.message)
+      const result = await registerUser(formData)
+
+      if (result.error) {
+        toast.error(result.error)
         return
       }
 
-      toast.success('Check your email to confirm your account!')
+      toast.success('Account created! Please sign in.')
       router.push('/login')
     } catch {
       toast.error('An error occurred during registration')

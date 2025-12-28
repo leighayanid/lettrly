@@ -1,6 +1,6 @@
 'use client'
 
-import { Tables } from '@/lib/supabase/types'
+import { Letter } from '@/lib/db/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
@@ -8,10 +8,11 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 interface LetterCardProps {
-  letter: Tables<'letters'>
+  letter: Letter
+  isNew?: boolean
 }
 
-export function LetterCard({ letter }: LetterCardProps) {
+export function LetterCard({ letter, isNew = false }: LetterCardProps) {
   const preview = letter.content.slice(0, 150) + (letter.content.length > 150 ? '...' : '')
   const senderName = letter.is_anonymous
     ? 'Anonymous'
@@ -22,7 +23,8 @@ export function LetterCard({ letter }: LetterCardProps) {
       <Card
         className={cn(
           'bg-[var(--paper-bg)] border-[var(--paper-lines)] hover:shadow-md transition-all cursor-pointer',
-          !letter.is_read && 'border-l-4 border-l-[var(--wax-seal)]'
+          !letter.is_read && 'border-l-4 border-l-[var(--wax-seal)]',
+          isNew && 'ring-2 ring-[var(--wax-seal)] ring-offset-2 ring-offset-amber-50'
         )}
       >
         <CardContent className="p-4">

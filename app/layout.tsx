@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Crimson_Text, Caveat } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
 
@@ -30,8 +31,10 @@ export default function RootLayout({
       <body
         className={`${crimson.variable} ${caveat.variable} font-serif antialiased`}
       >
-        {children}
-        <Toaster />
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );
