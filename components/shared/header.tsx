@@ -124,8 +124,12 @@ export function Header({ showBack = false, username }: HeaderProps) {
               align="end"
               className="bg-[var(--paper-bg)] border-[var(--paper-lines)]"
             >
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/settings">Profile Settings</Link>
+              </DropdownMenuItem>
               {username && (
                 <>
+                  <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
                   <DropdownMenuItem
                     onClick={handleCopyLink}
                     className="cursor-pointer"
@@ -137,9 +141,9 @@ export function Header({ showBack = false, username }: HeaderProps) {
                       View Letter Page
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
                 </>
               )}
+              <DropdownMenuSeparator className="bg-[var(--paper-lines)]" />
               <DropdownMenuItem
                 onClick={handleSignOut}
                 className="cursor-pointer text-red-500"
