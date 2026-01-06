@@ -1,4 +1,5 @@
 import { LetterForm } from '@/components/letter/letter-form'
+import { ProfileHeader } from '@/components/profile/profile-header'
 import { APP_NAME } from '@/lib/constants'
 import { getProfileByUsername } from '@/app/actions/letters'
 import { notFound } from 'next/navigation'
@@ -38,12 +39,11 @@ export default async function WritePage({ params }: PageProps) {
     <main className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-12">
-          <h1 className="text-4xl font-serif text-[var(--ink-primary)] mb-4">
-            Write a Letter to {displayName}
-          </h1>
-          <p className="text-[var(--ink-secondary)] text-lg">
-            Take your time. Your words matter.
-          </p>
+          <ProfileHeader
+            username={profile.username}
+            displayName={profile.display_name}
+            avatarUrl={profile.avatar_url}
+          />
         </header>
 
         <LetterForm recipientName={displayName} recipientUsername={profile.username} />
