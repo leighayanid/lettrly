@@ -3,6 +3,7 @@
 import { query, queryOne, pool } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { compare, hash } from 'bcryptjs'
 import type { Profile } from '@/lib/db/types'
 
 // Username validation constants
@@ -288,4 +289,74 @@ export async function getProfileStats() {
   )
 
   return { stats }
+}
+
+interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export async function changePassword(data: ChangePasswordInput) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = data
+
+  // Validate inputs
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { error: 'All password fields are required' }
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { error: 'New passwords do not match' }
+  }
+
+  if (newPassword.length < 6) {
+    return { error: 'New password must be at least 6 characters' }
+  }
+
+  if (currentPassword === newPassword) {
+    return { error: 'New password must be different from current password' }
+  }
+
+  try {
+    // Get current password hash
+    const user = await queryOne<{ password_hash: string | null }>(
+      'SELECT password_hash FROM users WHERE id = $1',
+      [session.user.id]
+    )
+
+    if (!user) {
+      return { error: 'User not found' }
+    }
+
+    if (!user.password_hash) {
+      return { error: 'Password authentication is not enabled for this account' }
+    }
+
+    // Verify current password
+    const isValidPassword = await compare(currentPassword, user.password_hash)
+
+    if (!isValidPassword) {
+      return { error: 'Current password is incorrect' }
+    }
+
+    // Hash new password
+    const newPasswordHash = await hash(newPassword, 12)
+
+    // Update password
+    await queryOne(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [newPasswordHash, session.user.id]
+    )
+
+    return { success: true }
+  } catch (error) {
+    console.error('Password change error:', error)
+    return { error: 'Failed to change password' }
+  }
 }
