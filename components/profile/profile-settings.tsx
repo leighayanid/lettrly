@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { updateProfile, checkUsernameAvailability, deleteAccount } from '@/app/actions/profile'
+import { updateProfile, checkUsernameAvailability, deleteAccount, changePassword } from '@/app/actions/profile'
 import { toast } from 'sonner'
 import { APP_URL } from '@/lib/constants'
 import type { ProfileWithEmail } from '@/lib/db/types'
@@ -44,6 +44,11 @@ export function ProfileSettings({ profile, stats }: ProfileSettingsProps) {
   const [username, setUsername] = useState(profile.username || '')
   const [displayName, setDisplayName] = useState(profile.display_name || '')
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '')
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   // Track if form has changes
   const hasChanges =
@@ -126,6 +131,33 @@ export function ProfileSettings({ profile, stats }: ProfileSettingsProps) {
       navigator.clipboard.writeText(link)
       toast.success('Link copied to clipboard!')
     }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    startTransition(async () => {
+      try {
+        const result = await changePassword({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        })
+
+        if (result.error) {
+          toast.error(result.error)
+        } else {
+          toast.success('Password changed successfully!')
+          // Clear password fields
+          setCurrentPassword('')
+          setNewPassword('')
+          setConfirmPassword('')
+        }
+      } catch (error) {
+        console.error('Password change error:', error)
+        toast.error('Failed to change password')
+      }
+    })
   }
 
   const memberSince = stats?.member_since
@@ -331,6 +363,112 @@ export function ProfileSettings({ profile, stats }: ProfileSettingsProps) {
                   className="border-[var(--paper-lines)]"
                 >
                   Cancel
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Change Password */}
+      <Card className="bg-[var(--paper-bg)] border-[var(--paper-lines)]">
+        <CardHeader>
+          <CardTitle className="text-[var(--ink-primary)]">Change Password</CardTitle>
+          <CardDescription className="text-[var(--ink-secondary)]">
+            Update your account password
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-6">
+            {/* Current Password */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword" className="text-[var(--ink-primary)]">
+                Current Password *
+              </Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter your current password"
+                className="bg-white border-[var(--paper-lines)]"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <Separator className="bg-[var(--paper-lines)]" />
+
+            {/* New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-[var(--ink-primary)]">
+                New Password *
+              </Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter your new password"
+                className="bg-white border-[var(--paper-lines)]"
+                required
+                minLength={6}
+              />
+              <p className="text-xs text-[var(--ink-secondary)]">
+                Must be at least 6 characters
+              </p>
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-[var(--ink-primary)]">
+                Confirm New Password *
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your new password"
+                className="bg-white border-[var(--paper-lines)]"
+                required
+                minLength={6}
+              />
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <p className="text-xs text-red-600">Passwords do not match</p>
+              )}
+              {newPassword && confirmPassword && newPassword === confirmPassword && (
+                <p className="text-xs text-green-600">✓ Passwords match</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-3">
+              <Button
+                type="submit"
+                disabled={
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmPassword ||
+                  newPassword !== confirmPassword ||
+                  isPending
+                }
+                className="bg-[var(--wax-seal)] hover:bg-[var(--wax-seal)]/90 text-white"
+              >
+                {isPending ? 'Changing Password...' : 'Change Password'}
+              </Button>
+              {(currentPassword || newPassword || confirmPassword) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentPassword('')
+                    setNewPassword('')
+                    setConfirmPassword('')
+                  }}
+                  className="border-[var(--paper-lines)]"
+                >
+                  Clear
                 </Button>
               )}
             </div>
